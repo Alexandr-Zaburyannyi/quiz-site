@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import PlusButton from "@/components/UI/PlusButton";
 import Modal from "@/components/Modal";
 import { Question } from "@/types/question";
@@ -12,6 +12,7 @@ const CreateQuiz = () => {
   const [quizName, setQuizName] = useState("New Quiz");
   const [questionToEdit, setQuestionToEdit] = useState<number>(0);
   const [openEditingModal, setOpenEditingModal] = useState(false);
+  const router = useRouter();
 
   const onSubmit = (data: Question) => {
     setQuestions((prev) => [...prev, { ...data }]);
@@ -19,7 +20,6 @@ const CreateQuiz = () => {
   };
 
   const onEdit = (data: Question) => {
-    console.log(data);
     const updatedQuestions = [...questions];
     updatedQuestions[questionToEdit] = { ...data };
     setQuestions(updatedQuestions);
@@ -30,14 +30,15 @@ const CreateQuiz = () => {
     setQuizName(e.target.value);
   };
 
-  useEffect(() => {
+  const saveToLocalStorage = () => {
+    const localeStorageData = localStorage.getItem("quizes");
+    const data = JSON.parse(localeStorageData || "[]");
     const newQuiz = {
       [quizName]: questions,
     };
-    const quizes = [];
-    quizes.push(newQuiz);
+    const quizes = [...data, newQuiz];
     localStorage.setItem("quizes", JSON.stringify(quizes));
-  }, [questions, quizName]);
+  };
 
   return (
     <main className='container w-full mt-40 mx-auto my-8 px-4 md:px-6 lg:px-8'>
@@ -123,6 +124,10 @@ const CreateQuiz = () => {
           type='button'
           disabled={questions.length === 0}
           className={`text-2xl font-bold mb-4 text-center capitalize flex w-full items-center justify-center px-4 py-2 mt-4 rounded-md border-solid border-2 border-white  bg-gray-950 text-gray-50 shadow-md   shadow-white disabled:blur-md`}
+          onClick={() => {
+            saveToLocalStorage();
+            router.push("/");
+          }}
         >
           Create Quiz
         </button>

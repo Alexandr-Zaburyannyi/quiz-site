@@ -59,7 +59,6 @@ const Modal: React.FC<Props> = ({
       reset();
     }
     if (data.question.trim().length !== 0 && answerType === "write") {
-      console.log(data["answer-type"]);
       const formattedData = {
         [data.question]: data["answer-type"],
       };
