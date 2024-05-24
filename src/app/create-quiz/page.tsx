@@ -126,7 +126,7 @@ const CreateQuiz = () => {
           className={`text-2xl font-bold mb-4 text-center capitalize flex w-full items-center justify-center px-4 py-2 mt-4 rounded-md border-solid border-2 border-white  bg-gray-950 text-gray-50 shadow-md   shadow-white disabled:blur-md`}
           onClick={() => {
             saveToLocalStorage();
-            router.push("/");
+            router.push("/account");
           }}
         >
           Create Quiz
