@@ -1,41 +1,80 @@
 "use client";
-import { useRef, useState, useEffect } from "react";
-import { IconX } from "@tabler/icons-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { IconMinus, IconX } from "@tabler/icons-react";
 import PlusButton from "./UI/PlusButton";
-
+import { Question } from "../types/question";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (data: Question) => void;
 }
 
-const Modal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const addInputRef = useRef<HTMLButtonElement>(null);
-  const [selected, setSelected] = useState<string>("defined");
+const Modal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
+  const [itemToRemove, setItemToRemove] = useState<number>();
+  const [answerInputs, setAnswerInputs] = useState<object[]>([
+    {
+      answer: "",
+      isTrue: false,
+    },
+    {
+      answer: "",
+      isTrue: false,
+    },
+  ]);
+  const { register, handleSubmit, reset, watch } = useForm({
+    defaultValues: {
+      question: "",
+      "is-true": [false, false],
+      answers: ["", ""],
+      "answer-type": "defined",
+    },
+  });
+  const answerType = watch("answer-type");
 
-  const addInputHandler = (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log(addInputRef.current);
+  const submitHandler = (data: any) => {
+    if (
+      data.question.trim().length !== 0 &&
+      data["is-true"].some((v: boolean) => v === true) &&
+      data["is-true"].some((v: boolean) => v !== true) &&
+      data.answers.every((v: string) => v.trim().length !== 0)
+    ) {
+      const formattedData = {
+        [data.question]: data.answers.map((answer: string, i: number) => ({
+          answer,
+          isTrue: data["is-true"][i],
+        })),
+      };
+      onSubmit(formattedData as unknown as Question);
+      reset();
+    }
+    if (data.question.trim().length !== 0 && answerType === "write") {
+      console.log(data["answer-type"]);
+      const formattedData = {
+        [data.question]: data["answer-type"],
+      };
+      onSubmit(formattedData as unknown as Question);
+      reset();
+    }
+  };
+  const removeItemHandler = (i: number) => {
+    if (answerInputs.length > 2) {
+      setItemToRemove(i);
+      setAnswerInputs((prev) => prev.filter((_, i) => i !== itemToRemove));
+    }
+  };
 
-    if (!addInputRef.current) return;
-
-    addInputRef.current.insertAdjacentHTML(
-      "beforebegin",
-      `<fieldset class='flex mr-4 justify-between w-full'>
-    <input
-      class='w-full p-2 mt-4 border-solid border-2 border-grey-400 rounded-lg'
-      placeholder='Answer'
-    />
-    <input
-      class='mt-4 mx-4'
-      type='checkbox'
-      name='is-true'
-      id=''
-    />
-  </fieldset>`
-    );
+  const addInputHandler = () => {
+    setAnswerInputs((prev) => [
+      ...prev,
+      {
+        answer: "",
+        isTrue: false,
+      },
+    ]);
   };
 
   if (!isOpen) return null;
-
   return (
     <>
       <div
@@ -57,62 +96,58 @@ const Modal: React.FC<Props> = ({ isOpen, onClose }) => {
               </button>
             </div>
             <div>
-              <form action=''>
+              <form action='' onSubmit={handleSubmit(submitHandler)}>
                 <textarea
-                  className='w-full p-2 border-solid border-2 border-grey-400 rounded-lg'
+                  className='w-full p-2 border-solid border-2 border-grey-400 rounded-lg text-black'
                   placeholder='Enter the question here'
+                  {...register("question")}
                 />
-                <select
-                  name='answer-type'
-                  id=''
-                  className='w-full p-2 rounded-md border-solid border-2 border-grey-400 text-black my-2'
-                  onChange={(e) => setSelected(e.target.value)}
-                >
-                  <option value='defined'>
-                    Choose from the defined answers
-                  </option>
-                  <option value='write'>Write a short answer</option>
-                </select>
-                {selected.includes("defined") ? (
+                <fieldset className='w-full my-2'>
+                  <label className='text-black mx-2' htmlFor='answer-type'>
+                    Choose the answer type:
+                  </label>
+                  <select
+                    className='w-full p-2 rounded-md border-solid border-2 border-grey-400 text-black my-2'
+                    {...register("answer-type")}
+                  >
+                    <option value='defined'>
+                      Choose from the defined answers
+                    </option>
+                    <option value='write'>Write a short answer</option>
+                  </select>
+                </fieldset>
+                {answerType.includes("defined") && (
                   <div>
                     <p className='w-5/6 text-black font-bold mt-4'>
                       Enter answers and mark if it is right:
                     </p>
-                    <fieldset className='flex mr-4 justify-between w-full'>
-                      <input
-                        className='w-full p-2 mt-4 border-solid border-2 border-grey-400 rounded-lg'
-                        placeholder='Answer'
-                      />
-                      <input
-                        className='mt-4 mx-4'
-                        type='checkbox'
-                        name='is-true'
-                        id=''
-                      />
-                    </fieldset>
-                    <fieldset className='flex mr-4 justify-between w-full'>
-                      <input
-                        className='w-full p-2 mt-4 border-solid border-2 border-grey-400 rounded-lg'
-                        placeholder='Answer'
-                      />
-                      <input
-                        className='mt-4 mx-4'
-                        type='checkbox'
-                        name='is-true'
-                        id=''
-                      />
-                    </fieldset>
-                    <PlusButton
-                      ref={addInputRef}
-                      onClick={addInputHandler as () => void}
-                      classes='w-full'
-                    />
+                    {answerInputs.map((_, i) => (
+                      <fieldset
+                        className='flex mr-4 justify-between w-full'
+                        key={i}
+                      >
+                        <input
+                          className='w-full p-2 mt-4 border-solid border-2 border-grey-400 rounded-lg text-black'
+                          placeholder='Answer'
+                          {...register(`answers.${i}`)}
+                        />
+                        <input
+                          className='mt-4 mx-4'
+                          type='checkbox'
+                          id=''
+                          {...register(`is-true.${i}`)}
+                        />
+                        <button
+                          type='button'
+                          onClick={() => removeItemHandler(i)}
+                          className='flex items-center justify-center px-4 py-2 mt-4 text-sm font-medium rounded-md border-solid border-2 border-white  bg-gray-950 text-gray-50 shadow-md hover:shadow-lg hover:shadow-white shadow-white'
+                        >
+                          <IconMinus className='h-6 w-6' />
+                        </button>
+                      </fieldset>
+                    ))}
+                    <PlusButton onClick={addInputHandler} classes='w-full' />
                   </div>
-                ) : (
-                  <textarea
-                    className='w-full p-2 border-solid border-2 border-grey-400 rounded-lg'
-                    placeholder='Write a short answer'
-                  />
                 )}
                 <button
                   className='flex items-center justify-center px-4 py-2 mt-4 text-sm font-medium rounded-md border-solid border-2 border-white  bg-gray-950 text-gray-50 shadow-md hover:shadow-lg hover:shadow-white shadow-white'
