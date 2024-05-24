@@ -8,31 +8,41 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Question) => void;
+  initialData?: any;
 }
 
-const Modal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
-  const [itemToRemove, setItemToRemove] = useState<number>();
-  const [answerInputs, setAnswerInputs] = useState<object[]>([
-    {
-      answer: "",
-      isTrue: false,
-    },
-    {
-      answer: "",
-      isTrue: false,
-    },
-  ]);
-  const { register, handleSubmit, reset, watch } = useForm({
+const Modal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData = {
     defaultValues: {
       question: "",
       "is-true": [false, false],
       answers: ["", ""],
       "answer-type": "defined",
     },
-  });
+  },
+}) => {
+  const [itemToRemove, setItemToRemove] = useState<number>();
+  const [answerInputs, setAnswerInputs] = useState<object[]>([
+    {
+      answer: initialData.defaultValues.answers[0],
+      isTrue: initialData.defaultValues["is-true"][0],
+    },
+    {
+      answer: initialData.defaultValues.answers[1],
+      isTrue: initialData.defaultValues["is-true"][1],
+    },
+  ]);
+  const { register, handleSubmit, reset, watch } = useForm(initialData);
   const answerType = watch("answer-type");
 
   const submitHandler = (data: any) => {
+    if (typeof data.question !== "string") {
+      data.question = data.question[0];
+    }
+
     if (
       data.question.trim().length !== 0 &&
       data["is-true"].some((v: boolean) => v === true) &&

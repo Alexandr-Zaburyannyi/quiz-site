@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import PlusButton from "@/components/UI/PlusButton";
 import Modal from "@/components/Modal";
@@ -8,36 +8,75 @@ import { Question } from "@/types/question";
 const CreateQuiz = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [settingsOpened, setSettingsOpened] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [quizName, setQuizName] = useState("New Quiz");
+  const [questionToEdit, setQuestionToEdit] = useState<number>(0);
+  const [openEditingModal, setOpenEditingModal] = useState(false);
 
   const onSubmit = (data: Question) => {
     setQuestions((prev) => [...prev, { ...data }]);
     setIsOpen(false);
   };
-  console.log(questions);
+
+  const onEdit = (data: Question) => {
+    console.log(data);
+    const updatedQuestions = [...questions];
+    updatedQuestions[questionToEdit] = { ...data };
+    setQuestions(updatedQuestions);
+    setOpenEditingModal(false);
+  };
+
+  const changeQuizNameHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuizName(e.target.value);
+  };
+
+  useEffect(() => {
+    const newQuiz = {
+      [quizName]: questions,
+    };
+    const quizes = [];
+    quizes.push(newQuiz);
+    localStorage.setItem("quizes", JSON.stringify(quizes));
+  }, [questions, quizName]);
+
   return (
     <main className='container w-full mt-40 mx-auto my-8 px-4 md:px-6 lg:px-8'>
       <div className='h-full w-full flex items-center justify-center flex-col'>
-        <h1 className='text-3xl font-bold'>New Quiz</h1>
+        <div className='w-full flex justify-evenly'>
+          {!isEditing ? (
+            <h1 className='text-3xl font-bold capitalize'>{quizName}</h1>
+          ) : (
+            <input
+              className='text-xl font-bold capitalize rounded-lg text-black'
+              value={quizName}
+              onChange={changeQuizNameHandler}
+            />
+          )}
+          <button
+            className='text-black bg-white font-bold py-2 px-4 rounded-lg capitalize'
+            onClick={() => setIsEditing((prev) => !prev)}
+          >
+            Edit Name
+          </button>
+        </div>
 
         {questions.length > 0 &&
           questions.map((question, i) => {
             const key = Object.keys(question);
             const value = Object.values(question);
-            console.log(value);
             return (
               <div
                 key={i}
                 className='my-4 w-full flex justify-around border-s-white border-2 p-4 rounded-lg shadow-md hover:shadow-lg hover:shadow-white shadow-white'
               >
-                <h2 className='text-2xl font-bold mb-4 text-center capitalize'>
+                <h2 className='text-2xl font-bold mb-4 text-center capitalize mr-5'>
                   {key}
                 </h2>
-                <div className='w-5/12 grid grid-cols-6 gap-4  justify-self-center'>
+                <div className='w-5/6 grid grid-cols-6 gap-4 '>
                   {value[0] !== "write" ? (
                     value.flat(2).map((answer, i) => (
                       <div
-                        className='relative bg-gray-200 hover:bg-gray-300 rounded-lg py-2 px-4 transition-colors text-black capitalize text-center pt-3'
+                        className='relative bg-gray-200 hover:bg-gray-300 rounded-lg py-2 px-4 transition-colors text-black capitalize text-center pt-3 w-full'
                         key={i}
                       >
                         {answer.answer}
@@ -52,65 +91,33 @@ const CreateQuiz = () => {
                     </div>
                   )}
                 </div>
+                <button
+                  className='text-black bg-white font-bold py-2 px-4 rounded-lg capitalize'
+                  onClick={() => {
+                    setOpenEditingModal(true);
+                    setQuestionToEdit(i);
+                  }}
+                >
+                  Edit
+                </button>
+                <Modal
+                  isOpen={openEditingModal}
+                  onClose={() => setOpenEditingModal(false)}
+                  onSubmit={onEdit}
+                  initialData={{
+                    defaultValues: {
+                      question: key,
+                      ["is-true"]: value.flat(2).map((answer) => answer.isTrue),
+                      answers: value.flat(2).map((answer) => answer.answer),
+                      ["answer-type"]:
+                        value[0] === "write" ? "write" : "defined",
+                    },
+                  }}
+                />
               </div>
             );
           })}
         <PlusButton onClick={() => setIsOpen(true)} classes='w-full' />
-        <div className='my-4 w-full flex flex-col justify-around border-s-white border-2 p-4 rounded-lg shadow-md hover:shadow-lg hover:shadow-white shadow-white '>
-          <button
-            className='m-auto whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary underline-offset-4 hover:underline h-10 px-4 py-2 flex items-center justify-between w-full text-center'
-            type='button'
-            id='radix-:R3lafnnja:'
-            aria-haspopup='menu'
-            aria-expanded='false'
-            data-state='closed'
-            onClick={() => setSettingsOpened((prev) => !prev)}
-          >
-            <h3 className='hover:bg-grey-200 m-auto'>Additional settings</h3>
-          </button>
-          {settingsOpened && (
-            <div className='mx-auto max-w-md space-y-6'>
-              <div className='space-y-4'>
-                <div className='grid gap-2'>
-                  <label htmlFor='total-points'>Total Points</label>
-                  <input
-                    id='total-points'
-                    placeholder='100'
-                    type='number'
-                    className='rounded-md border-s-white border-2 p-2'
-                  />
-                </div>
-                <div className='flex flex-col'>
-                  <div className='grid gap-2'>
-                    <label htmlFor='time-limit-minutes'>
-                      Time Limit (minutes)
-                    </label>
-                    <input
-                      id='time-limit-minutes'
-                      placeholder='30'
-                      type='number'
-                      className='rounded-md border-s-white border-2 p-2'
-                    />
-                  </div>
-                  <div className='grid gap-2'>
-                    <label htmlFor='time-limit-seconds'>
-                      Time Limit (seconds)
-                    </label>
-                    <input
-                      id='time-limit-seconds'
-                      placeholder='00'
-                      type='number'
-                      className='rounded-md border-s-white border-2 p-2'
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className='flex justify-end gap-2'>
-                <button>Save</button>
-              </div>
-            </div>
-          )}
-        </div>
 
         <button
           type='button'
